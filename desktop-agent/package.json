@@ -1,0 +1,21 @@
+{
+  "name": "billing-agent",
+  "version": "1.0.0",
+  "description": "Billing Pro Desktop Agent — Client monitoring untuk warnet & rental PC",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder build --win --config electron-builder.json",
+    "dev": "NODE_ENV=development electron ."
+  },
+  "dependencies": {
+    "socket.io-client": "^4.7.0",
+    "systeminformation": "^5.22.0",
+    "active-win": "^8.1.0",
+    "electron-store": "^8.2.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}

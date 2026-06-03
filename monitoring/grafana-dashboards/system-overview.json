@@ -1,0 +1,63 @@
+{
+  "title": "Billing Pro — System Overview",
+  "uid": "billing-pro-system",
+  "version": 1,
+  "schemaVersion": 36,
+  "tags": ["billing-pro"],
+  "timezone": "browser",
+  "panels": [
+    {
+      "title": "CPU Usage",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 0 },
+      "targets": [{ "expr": "100 - avg by(instance)(rate(node_cpu_seconds_total{mode='idle'}[1m])) * 100", "legendFormat": "CPU" }]
+    },
+    {
+      "title": "Memory Usage",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 0 },
+      "targets": [{ "expr": "(1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100", "legendFormat": "Memory" }]
+    },
+    {
+      "title": "Disk Usage",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 0 },
+      "targets": [{ "expr": "(1 - node_filesystem_avail_bytes{mountpoint='/'} / node_filesystem_size_bytes{mountpoint='/'}) * 100", "legendFormat": "Disk" }]
+    },
+    {
+      "title": "Uptime",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 0 },
+      "targets": [{ "expr": "time() - node_boot_time_seconds", "legendFormat": "Uptime" }],
+      "options": { "unit": "s", "colorMode": "none", "graphMode": "none", "justifyMode": "auto" }
+    },
+    {
+      "title": "Network I/O",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        { "expr": "rate(node_network_receive_bytes_total{device='eth0'}[1m])", "legendFormat": "Download" },
+        { "expr": "rate(node_network_transmit_bytes_total{device='eth0'}[1m])", "legendFormat": "Upload" }
+      ]
+    },
+    {
+      "title": "Active Billing Sessions",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 8 },
+      "targets": [{ "expr": "billing_active_sessions_total", "legendFormat": "Active" }]
+    },
+    {
+      "title": "Revenue Today",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 8 },
+      "targets": [{ "expr": "billing_revenue_today_total", "legendFormat": "Revenue" }],
+      "options": { "unit": "currencyIDR", "colorMode": "none", "graphMode": "none" }
+    },
+    {
+      "title": "Container Stats",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "targets": [{ "expr": "rate(container_cpu_usage_seconds_total[1m])", "legendFormat": "{{name}}" }]
+    }
+  ]
+}

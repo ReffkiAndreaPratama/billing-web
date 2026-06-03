@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: #faf6f0;
+  --color-foreground: #1a1a1a;
+  --color-card: #ffffff;
+  --color-card-foreground: #1a1a1a;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #1a1a1a;
+  --color-primary: #4d96ff;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #ffd93d;
+  --color-secondary-foreground: #1a1a1a;
+  --color-muted: #e8e0d0;
+  --color-muted-foreground: #666666;
+  --color-accent: #ffd93d;
+  --color-accent-foreground: #1a1a1a;
+  --color-destructive: #ff6b6b;
+  --color-destructive-foreground: #ffffff;
+  --color-success: #6bcb77;
+  --color-success-foreground: #1a1a1a;
+  --color-warning: #ffd93d;
+  --color-warning-foreground: #1a1a1a;
+  --color-info: #4d96ff;
+  --color-info-foreground: #ffffff;
+  --color-border: #1a1a1a;
+  --color-input: #1a1a1a;
+  --color-ring: #4d96ff;
+  --radius: 0px;
+  --shadow-brutal: 4px 4px 0px 0px #1a1a1a;
+  --shadow-brutal-lg: 8px 8px 0px 0px #1a1a1a;
+  --shadow-brutal-sm: 3px 3px 0px 0px #4d96ff;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c0b8a8 transparent;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: 'Inter', 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  font-weight: 700;
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+  animation: slide-up 0.3s ease-out;
+}

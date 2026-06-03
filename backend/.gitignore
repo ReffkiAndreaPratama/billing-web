@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables
+.env
+.env.local
+
+# Database files
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+prisma/billing.db
+
+# Backups
+backups/
+
+# Logs
+logs/
+*.log

@@ -1,0 +1,32 @@
+{
+  "appId": "com.billingpro.agent",
+  "productName": "Billing Pro Agent",
+  "directories": {
+    "output": "dist"
+  },
+  "win": {
+    "target": ["nsis"],
+    "icon": "assets/icon.ico",
+    "publisherName": "Billing Pro"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Billing Pro Agent",
+    "installerIcon": "assets/icon.ico",
+    "uninstallerIcon": "assets/icon.ico",
+    "installerHeaderIcon": "assets/icon.ico"
+  },
+  "extraResources": [
+    { "from": "assets/", "to": "assets/" }
+  ],
+  "files": [
+    "src/**/*",
+    "node_modules/**/*",
+    "package.json"
+  ],
+  "buildVersion": "1.0.0",
+  "compression": "maximum"
+}

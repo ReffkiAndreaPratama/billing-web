@@ -1,0 +1,588 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// (enum removed for SQLite compatibility)
+
+// (enum removed for SQLite compatibility)
+
+// (enum removed for SQLite compatibility)
+
+// (enum removed for SQLite compatibility)
+
+// (enum removed for SQLite compatibility)
+
+// (enum removed for SQLite compatibility)
+
+// (enum removed for SQLite compatibility)
+
+// (enum removed for SQLite compatibility)
+
+// (enum removed for SQLite compatibility)
+
+// (enum removed for SQLite compatibility)
+
+// (enum removed for SQLite compatibility)
+
+// (enum removed for SQLite compatibility)
+
+// (enum removed for SQLite compatibility)
+
+model User {
+  id            String     @id @default(cuid())
+  username      String     @unique
+  password      String
+  name          String
+  role String   @default("ADMIN")
+  phone         String?
+  email         String?    @unique
+  isActive      Boolean    @default(true)
+  lastLogin     DateTime?
+  shift         Shift[]
+  transactions  Transaction[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
+  startedSessions BillingSession[] @relation("StartedBy")
+  endedSessions   BillingSession[] @relation("EndedBy")
+  employees     Employee[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  branchId      String?
+  branch        Branch?    @relation(fields: [branchId], references: [id])
+
+  @@map("users")
+}
+
+model Branch {
+  id          String       @id @default(cuid())
+  name        String
+  address     String?
+  phone       String?
+  city        String?
+  isActive    Boolean      @default(true)
+  users       User[]
+  units       Unit[]
+  members     Member[]
+  transactions Transaction[]
+  shifts      Shift[]
+  promos      Promo[]
+  employees   Employee[]
+  waitingQueues WaitingQueue[]
+  events        Event[]
+  settings    BranchSetting?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("branches")
+}
+
+model BranchSetting {
+  id              String   @id @default(cuid())
+  branchId        String   @unique
+  branch          Branch   @relation(fields: [branchId], references: [id])
+  taxRate         Float    @default(11)
+  currency        String   @default("IDR")
+  timezone        String   @default("Asia/Jakarta")
+  autoPrintStruk  Boolean  @default(true)
+  idleTimeout     Int      @default(30)
+  minBilling      Int      @default(1)
+  allowOvertime   Boolean  @default(true)
+  overtimeRate    Float    @default(1.5)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("branch_settings")
+}
+
+model Unit {
+  id              String         @id @default(cuid())
+  name            String
+  code            String         @unique
+  type String
+  status String     @default("AVAILABLE")
+  hourlyRate      Float
+  vipRate         Float?
+  positionX       Int?
+  positionY       Int?
+  width           Int?
+  height          Int?
+  specs           String?
+  isActive        Boolean        @default(true)
+  branchId        String
+  branch          Branch         @relation(fields: [branchId], references: [id])
+  sessions        BillingSession[]
+  bookings        Booking[]
+  maintenance     Maintenance[]
+  assets          Asset[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@map("units")
+}
+
+model Member {
+  id            String        @id @default(cuid())
+  code          String        @unique
+  name          String
+  phone         String        @unique
+  email         String?
+  password      String?
+  pin           String?
+  rfidTag       String?       @unique
+  faceData      String?
+  tier String    @default("BRONZE")
+  balance       Float         @default(0)
+  totalPoints   Int           @default(0)
+  totalSpent    Float         @default(0)
+  visitCount    Int           @default(0)
+  lastVisit     DateTime?
+  isActive      Boolean       @default(true)
+  referralCode  String?       @unique
+  referralById  String?
+  referralBy    Member?       @relation("Referral", fields: [referralById], references: [id])
+  referrals     Member[]      @relation("Referral")
+  sessions      BillingSession[]
+  bookings      Booking[]
+  transactions  Transaction[]
+  loyaltyLogs   LoyaltyLog[]
+  waitingQueue  WaitingQueue[]
+  eventRegistrations EventRegistration[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  branchId      String?
+  branch        Branch?       @relation(fields: [branchId], references: [id])
+
+  @@map("members")
+}
+
+model Package {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  duration    Int          // in minutes
+  price       Float
+  type String?
+  isActive    Boolean      @default(true)
+  billingSessions BillingSession[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("packages")
+}
+
+model BillingSession {
+  id            String        @id @default(cuid())
+  startTime     DateTime
+  endTime       DateTime?
+  duration      Int           // in minutes
+  actualMinutes Int?
+  totalCost     Float
+  overtimeCost  Float         @default(0)
+  status String @default("ACTIVE")
+  notes         String?
+  unitId        String
+  unit          Unit          @relation(fields: [unitId], references: [id])
+  memberId      String?
+  member        Member?       @relation(fields: [memberId], references: [id])
+  packageId     String?
+  package       Package?      @relation(fields: [packageId], references: [id])
+  startedBy     String
+  startedByUser User          @relation("StartedBy", fields: [startedBy], references: [id])
+  endedBy       String?
+  endedByUser   User?         @relation("EndedBy", fields: [endedBy], references: [id])
+  pauses        SessionPause[]
+  transaction   Transaction?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@map("billing_sessions")
+}
+
+model SessionPause {
+  id             String   @id @default(cuid())
+  billingId      String
+  billing        BillingSession @relation(fields: [billingId], references: [id])
+  pauseStart     DateTime
+  pauseEnd       DateTime?
+  duration       Int?
+  reason         String?
+  createdAt      DateTime @default(now())
+
+  @@map("session_pauses")
+}
+
+model Transaction {
+  id              String          @id @default(cuid())
+  invoiceNumber   String          @unique
+  type String
+  amount          Float
+  paymentMethod String?
+  paymentStatus String   @default("PENDING")
+  paymentRef      String?
+  notes           String?
+  billingId       String?         @unique
+  billing         BillingSession? @relation(fields: [billingId], references: [id])
+  memberId        String?
+  member          Member?         @relation(fields: [memberId], references: [id])
+  userId          String
+  user            User            @relation(fields: [userId], references: [id])
+  shiftId         String?
+  shift           Shift?          @relation(fields: [shiftId], references: [id])
+  branchId         String?
+  branch           Branch?        @relation(fields: [branchId], references: [id])
+  details         TransactionDetail[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@map("transactions")
+}
+
+model TransactionDetail {
+  id            String      @id @default(cuid())
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  itemName      String
+  quantity      Int         @default(1)
+  unitPrice     Float
+  subtotal      Float
+  createdAt     DateTime    @default(now())
+
+  @@map("transaction_details")
+}
+
+model Booking {
+  id            String         @id @default(cuid())
+  code          String         @unique
+  startTime     DateTime
+  endTime       DateTime
+  duration      Int
+  totalCost     Float
+  deposit       Float          @default(0)
+  status String  @default("PENDING")
+  notes         String?
+  unitId        String
+  unit          Unit           @relation(fields: [unitId], references: [id])
+  memberId      String?
+  member        Member?        @relation(fields: [memberId], references: [id])
+  customerName  String?
+  customerPhone String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("bookings")
+}
+
+model Shift {
+  id            String        @id @default(cuid())
+  code          String        @unique
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  branchId      String?
+  branch        Branch?       @relation(fields: [branchId], references: [id])
+  startTime     DateTime      @default(now())
+  endTime       DateTime?
+  initialCash   Float         @default(0)
+  expectedCash  Float?
+  actualCash    Float?
+  difference    Float?
+  notes         String?
+  status String   @default("OPEN")
+  transactions  Transaction[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@map("shifts")
+}
+
+model Inventory {
+  id            String          @id @default(cuid())
+  name          String
+  sku           String          @unique
+  category      String
+  unitPrice     Float
+  stock         Int             @default(0)
+  minStock      Int             @default(5)
+  supplierId    String?
+  supplier      Supplier?       @relation(fields: [supplierId], references: [id])
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@map("inventories")
+}
+
+model Supplier {
+  id          String      @id @default(cuid())
+  name        String
+  phone       String?
+  email       String?
+  address     String?
+  inventories Inventory[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("suppliers")
+}
+
+model Promo {
+  id            String      @id @default(cuid())
+  code          String      @unique
+  name          String
+  description   String?
+  type String
+  value         Float       // percentage or nominal
+  minPurchase   Float       @default(0)
+  maxDiscount   Float?
+  maxUsage      Int         @default(0)  // 0 = unlimited
+  usedCount     Int         @default(0)
+  startDate     DateTime
+  endDate       DateTime
+  daysOfWeek String       // 0=Sun, 1=Mon, etc
+  startHour     Int?        // happy hour start
+  endHour       Int?        // happy hour end
+  isActive      Boolean     @default(true)
+  branchId      String?
+  branch        Branch?     @relation(fields: [branchId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("promos")
+}
+
+model Tournament {
+  id            String          @id @default(cuid())
+  name          String
+  description   String?
+  game          String
+  type          String          // single_elimination, double_elimination, round_robin
+  maxTeams      Int
+  maxPlayers    Int
+  prizePool     Float           @default(0)
+  entryFee      Float           @default(0)
+  status String @default("DRAFT")
+  startDate     DateTime
+  endDate       DateTime?
+  rules         String?
+  teams         Team[]
+  matches       Match[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@map("tournaments")
+}
+
+model Team {
+  id            String          @id @default(cuid())
+  name          String
+  logo          String?
+  captainName   String
+  captainPhone  String
+  members       Int             @default(1)
+  status        String          @default("REGISTERED")
+  tournamentId  String
+  tournament    Tournament      @relation(fields: [tournamentId], references: [id])
+  homeMatches   Match[]         @relation("HomeTeam")
+  awayMatches   Match[]         @relation("AwayTeam")
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@map("teams")
+}
+
+model Match {
+  id            String      @id @default(cuid())
+  round         Int
+  matchOrder    Int
+  homeTeamId    String
+  homeTeam      Team        @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeamId    String
+  awayTeam      Team        @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  homeScore     Int?
+  awayScore     Int?
+  winnerId      String?
+  status String @default("SCHEDULED")
+  scheduledAt   DateTime?
+  tournamentId  String
+  tournament    Tournament  @relation(fields: [tournamentId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("matches")
+}
+
+model LoyaltyLog {
+  id          String   @id @default(cuid())
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id])
+  points      Int
+  type        String   // EARN, REDEEM, EXPIRED
+  source      String?  // billing, topup, referral, promo, achievement
+  description String?
+  reference   String?
+  balanceAfter Int?
+  createdAt   DateTime @default(now())
+
+  @@map("loyalty_logs")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String   // WA, TELEGRAM, DISCORD, EMAIL, PUSH, INAPP
+  title     String
+  message   String
+  recipient String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  status    String   // PENDING, SENT, FAILED
+  metadata String?
+  createdAt DateTime @default(now())
+  sentAt    DateTime?
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  details String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+model Asset {
+  id            String   @id @default(cuid())
+  name          String
+  type          String   // MONITOR, STICK, KEYBOARD, MOUSE, HEADSET, GPU, etc
+  serialNumber  String?  @unique
+  unitId        String?
+  unit          Unit?    @relation(fields: [unitId], references: [id])
+  purchaseDate  DateTime?
+  purchasePrice Float?
+  condition     String   @default("GOOD") // GOOD, FAIR, DAMAGE, REPLACED
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("assets")
+}
+
+model Maintenance {
+  id          String   @id @default(cuid())
+  unitId      String
+  unit        Unit     @relation(fields: [unitId], references: [id])
+  type        String   // ROUTINE, BREAKDOWN, UPGRADE
+  description String
+  cost        Float    @default(0)
+  status      String   // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
+  scheduledAt DateTime?
+  completedAt DateTime?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("maintenance")
+}
+
+model Employee {
+  id          String       @id @default(cuid())
+  name        String
+  phone       String       @unique
+  email       String?
+  position    String       // KASIR, ADMIN, TEKNISI, CLEANING
+  salary      Float?
+  hireDate    DateTime     @default(now())
+  isActive    Boolean      @default(true)
+  userId      String?
+  user        User?        @relation(fields: [userId], references: [id])
+  branchId    String?
+  branch      Branch?      @relation(fields: [branchId], references: [id])
+  attendance  Attendance[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("employees")
+}
+
+model Attendance {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  clockIn    DateTime
+  clockOut   DateTime?
+  hoursWorked Float?
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  @@map("attendances")
+}
+
+model WaitingQueue {
+  id                String        @id @default(cuid())
+  customerName      String
+  customerPhone     String?
+  requestedUnitType String?
+  unitType String?
+  notes             String?
+  status String   @default("WAITING")
+  position          Int?
+  memberId          String?
+  member            Member?       @relation(fields: [memberId], references: [id])
+  branchId          String
+  branch            Branch        @relation(fields: [branchId], references: [id])
+  servedAt          DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@map("waiting_queue")
+}
+
+// (enum removed for SQLite compatibility)
+
+model Event {
+  id              String              @id @default(cuid())
+  name            String
+  description     String?
+  type            String              // TOURNAMENT, GATHERING, LAUNCH, WORKSHOP
+  status          String              @default("UPCOMING") // UPCOMING, ONGOING, COMPLETED, CANCELLED
+  startDate       DateTime
+  endDate         DateTime
+  maxParticipants Int?
+  entryFee        Float               @default(0)
+  prizePool       Float               @default(0)
+  bannerUrl       String?
+  branchId        String?
+  branch          Branch?             @relation(fields: [branchId], references: [id])
+  registrations   EventRegistration[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@map("events")
+}
+
+model EventRegistration {
+  id        String   @id @default(cuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id])
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id])
+  status    String   @default("REGISTERED") // REGISTERED, CONFIRMED, CHECKED_IN, CANCELLED
+  checkedInAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@map("event_registrations")
+}
+
+
+
+
+

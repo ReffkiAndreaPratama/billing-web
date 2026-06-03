@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Billing Agent</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', -apple-system, sans-serif;
+      background: #0a0a0f;
+      color: #e4e4e7;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      -webkit-app-region: drag;
+    }
+    .header .logo {
+      width: 32px;
+      height: 32px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .header .info { flex: 1; }
+    .header .info h1 { font-size: 14px; font-weight: 600; color: #fff; }
+    .header .info p { font-size: 10px; color: rgba(255,255,255,0.7); }
+    .header .status-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      -webkit-app-region: no-drag;
+    }
+    .header .status-dot.connected { background: #22c55e; box-shadow: 0 0 8px rgba(34,197,94,0.5); }
+    .header .status-dot.disconnected { background: #ef4444; box-shadow: 0 0 8px rgba(239,68,68,0.5); }
+
+    /* Controls bar */
+    .controls {
+      display: flex;
+      gap: 6px;
+      padding: 10px 16px;
+      background: #18181b;
+      border-bottom: 1px solid #27272a;
+    }
+    .controls button {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #27272a;
+      border-radius: 8px;
+      background: transparent;
+      color: #a1a1aa;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+    .controls button:hover {
+      background: #27272a;
+      color: #fff;
+    }
+    .controls button.danger:hover { background: rgba(239,68,68,0.15); color: #ef4444; border-color: rgba(239,68,68,0.3); }
+
+    /* Main content */
+    .content {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Session card */
+    .session-card {
+      background: linear-gradient(135deg, #18181b, #1a1a2e);
+      border: 1px solid #27272a;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      display: none;
+    }
+    .session-card.active { display: block; }
+    .session-card .timer {
+      font-size: 56px;
+      font-weight: 700;
+      font-family: 'Courier New', monospace;
+      line-height: 1;
+    }
+    .session-card .timer.normal { color: #06b6d4; }
+    .session-card .timer.warning { color: #fbbf24; animation: pulse 1.5s infinite; }
+    .session-card .timer.critical { color: #ef4444; animation: pulse 0.8s infinite; }
+    .session-card .label { font-size: 12px; color: #71717a; margin-top: 4px; }
+    .session-card .details {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 12px;
+      font-size: 12px;
+      color: #a1a1aa;
+    }
+    .session-card .details span { display: flex; align-items: center; gap: 4px; }
+
+    /* Stats grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .stat-box {
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .stat-box .stat-label { font-size: 10px; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-box .stat-value { font-size: 18px; font-weight: 600; color: #fff; margin-top: 2px; }
+    .stat-box .stat-sub { font-size: 10px; color: #52525b; margin-top: 2px; }
+
+    /* Notification popup */
+    .popup {
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+      padding: 14px;
+      border-radius: 10px;
+      background: #18181b;
+      border: 1px solid #06b6d4;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      transform: translateY(120%);
+      transition: transform 0.3s ease;
+      z-index: 100;
+    }
+    .popup.show { transform: translateY(0); }
+    .popup .popup-title { font-size: 13px; font-weight: 600; color: #06b6d4; }
+    .popup .popup-body { font-size: 12px; color: #a1a1aa; margin-top: 4px; }
+
+    /* idle state */
+    .idle-state {
+      text-align: center;
+      padding: 30px 0;
+      color: #52525b;
+    }
+    .idle-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .idle-state p { font-size: 13px; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">🎮</div>
+    <div class="info">
+      <h1>Billing Agent</h1>
+      <p id="machineId">Loading...</p>
+    </div>
+    <div class="status-dot disconnected" id="statusDot"></div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button onclick="window.agent.hideWindow()">− Minimize</button>
+    <button onclick="window.agent.lockScreen()">🔒 Lock</button>
+    <button class="danger" onclick="if(confirm('Shutdown PC?')){window.agent.lockScreen()}">⏻ Shutdown</button>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <!-- Active Session -->
+    <div class="session-card" id="sessionCard">
+      <div class="label">Session Active — <span id="unitName">-</span></div>
+      <div class="timer normal" id="timerDisplay">--:--</div>
+      <div class="label" id="sessionLabel">Remaining Time</div>
+      <div class="details">
+        <span>⏱ <span id="elapsedTime">0m</span></span>
+        <span>💰 <span id="totalCost">Rp0</span></span>
+      </div>
+    </div>
+
+    <!-- Idle State -->
+    <div class="idle-state" id="idleState">
+      <div class="icon">💤</div>
+      <p>No active session</p>
+      <p style="font-size:11px;margin-top:4px;">PC tersedia untuk digunakan</p>
+    </div>
+
+    <!-- System Stats -->
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-label">CPU</div>
+        <div class="stat-value" id="cpuValue">0%</div>
+        <div class="stat-sub" id="cpuTemp">-</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">RAM</div>
+        <div class="stat-value" id="ramValue">0%</div>
+        <div class="stat-sub" id="ramUsed">0 GB / 0 GB</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Uptime</div>
+        <div class="stat-value" id="uptimeValue">-</div>
+        <div class="stat-sub">System</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Processes</div>
+        <div class="stat-value" id="processValue">0</div>
+        <div class="stat-sub">Running</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Popup -->
+  <div class="popup" id="popup">
+    <div class="popup-title" id="popupTitle">Message</div>
+    <div class="popup-body" id="popupBody">Content</div>
+  </div>
+
+  <script>
+    let config = {};
+    let sessionStartTime = null;
+    let sessionDuration = 0;
+
+    // Agent config
+    window.agent.onAgentConfig((cfg) => {
+      config = cfg;
+      document.getElementById('machineId').textContent = `PC: ${cfg.machineId}`;
+    });
+
+    // System stats
+    window.agent.onSystemStats((stats) => {
+      if (!stats) return;
+
+      document.getElementById('cpuValue').textContent = `${stats.cpu?.load || 0}%`;
+      document.getElementById('cpuTemp').textContent = stats.cpu?.temp ? `${stats.cpu.temp}°C` : '-';
+
+      const mem = stats.memory;
+      document.getElementById('ramValue').textContent = `${mem?.usagePercent || 0}%`;
+      if (mem) {
+        const usedGB = (mem.used / 1024 / 1024 / 1024).toFixed(1);
+        const totalGB = (mem.total / 1024 / 1024 / 1024).toFixed(1);
+        document.getElementById('ramUsed').textContent = `${usedGB} GB / ${totalGB} GB`;
+      }
+
+      const uptime = stats.os?.uptime || 0;
+      const hours = Math.floor(uptime / 3600);
+      const mins = Math.floor((uptime % 3600) / 60);
+      document.getElementById('uptimeValue').textContent = `${hours}h ${mins}m`;
+
+      document.getElementById('processValue').textContent = stats.processes?.running || 0;
+    });
+
+    // Session
+    window.agent.onSessionStart((data) => {
+      sessionStartTime = new Date(data.startTime);
+      sessionDuration = data.duration;
+      document.getElementById('unitName').textContent = data.unitName || data.unit?.name || 'PC';
+      document.getElementById('sessionCard').classList.add('active');
+      document.getElementById('idleState').style.display = 'none';
+      updateTimer();
+    });
+
+    window.agent.onSessionEnd(() => {
+      document.getElementById('sessionCard').classList.remove('active');
+      document.getElementById('idleState').style.display = 'block';
+      sessionStartTime = null;
+    });
+
+    window.agent.onSessionWarning((data) => {
+      showPopup('⚠️ Time Warning', `${data.remainingMinutes} minutes remaining!`);
+    });
+
+    window.agent.onPopupMessage((data) => {
+      showPopup(data.title || 'Message', data.message);
+    });
+
+    // Timer update
+    function updateTimer() {
+      if (!sessionStartTime) return;
+
+      const now = Date.now();
+      const elapsed = Math.floor((now - sessionStartTime.getTime()) / 60000);
+      const remaining = Math.max(0, sessionDuration - elapsed);
+      const minutes = Math.floor(remaining);
+      const seconds = Math.floor((remaining % 1) * 60);
+
+      const display = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      const timerEl = document.getElementById('timerDisplay');
+      timerEl.textContent = display;
+
+      timerEl.className = 'timer';
+      if (remaining < 5) timerEl.classList.add('critical');
+      else if (remaining < 15) timerEl.classList.add('warning');
+      else timerEl.classList.add('normal');
+
+      document.getElementById('elapsedTime').textContent = `${elapsed}m`;
+      document.getElementById('totalCost').textContent = `Rp${Math.floor(sessionDuration * 100)}`;
+
+      requestAnimationFrame(updateTimer);
+    }
+
+    // Popup
+    let popupTimeout = null;
+    function showPopup(title, body) {
+      const popup = document.getElementById('popup');
+      document.getElementById('popupTitle').textContent = title;
+      document.getElementById('popupBody').textContent = body;
+      popup.classList.add('show');
+      if (popupTimeout) clearTimeout(popupTimeout);
+      popupTimeout = setTimeout(() => popup.classList.remove('show'), 5000);
+    }
+  </script>
+</body>
+</html>
